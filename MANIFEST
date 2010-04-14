@@ -1,0 +1,7 @@
+Changes
+MANIFEST
+Makefile.PL
+README
+lib/Bot/BasicBot/Pluggable/Module/Notes/Store/SQLite.pm
+lib/Bot/BasicBot/Pluggable/Module/Notes.pm
+t/notes.t
