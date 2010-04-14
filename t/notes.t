@@ -1,7 +1,7 @@
 #!/usr/bin/perl
 use strict;
 use warnings;
-use Test::More tests => 7;
+use Test::More tests => 10;
 use Test::DatabaseRow;
 
 use Test::Bot::BasicBot::Pluggable;
@@ -19,11 +19,11 @@ my $bot = Test::Bot::BasicBot::Pluggable->new( channels => [ "#test" ],
 				       );
 $bot->load( "Notes" );
 
-my $blog_handler = $bot->handler( "Notes" );
+my $notes_handler = $bot->handler( "Notes" );
 
 eval {
     local $SIG{__WARN__} = { }; # we expect DBI to warn
-    $blog_handler->set_store(
+    $notes_handler->set_store(
         Bot::BasicBot::Pluggable::Module::Notes::Store::SQLite
             ->new( "thisdoesnotexist/brane.db" )
     );
@@ -31,7 +31,7 @@ eval {
 ok( $@, "set_store croaks when database file can't be created" );
 
 eval {
-    $blog_handler->set_store(
+    $notes_handler->set_store(
         Bot::BasicBot::Pluggable::Module::Notes::Store::SQLite
             ->new( $TESTDB )
     );
@@ -58,17 +58,18 @@ row_ok( table => "notes",
 	where => [ channel => '#test', notes => 'TODO: Better document bot', name => 'test_user' ],
 	label => "stores note to self" );
 
+## Test command parsing:
+
+my $simple_command = $notes_handler->parse_command('!nb');
+is_deeply($simple_command, { command => 'nb', args => ''}, 'Parsed simple command !nb');
+
+my $two_word_command = $notes_handler->parse_command('!{my notes}');
+is_deeply($two_word_command, { command => 'mn', args => ''}, 'Parsed two word command !{my notes}');
+
+my $command_with_args = $notes_handler->parse_command('!search #todo');
+is_deeply($command_with_args, { command => 'search', args => '#todo' }, 'Parsed command with args !search #todo');
+ 
+
 END {
     unlink $TESTDB;
 }
-#my %test_data = (timestamp => "2010-04-12 08:09:56",
-#		 name      => "castaway",
-#		 channel   => "#london.pm",
-#         notes     => "TODO: better document bot");
-
-#$store->store( %test_data );
-
-#row_ok( table => "blogged",
-#	where => [ %test_data ],
-##    tests => [ %test_data ],
-#	label => "can store stuff" );

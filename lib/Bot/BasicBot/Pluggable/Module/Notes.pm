@@ -45,6 +45,16 @@ viewed on the web using a small web app (provided).
 
 =cut
 
+## Map commands to methods
+my %commands = (
+    'note to self' => 'nb',
+    'nb' => 'nb',
+    'my notes' => 'mn',
+    'mn' => 'mn',
+    'search' => 'search',
+    'show' => 'show',
+);
+
 sub help {
     my $self = shift;
     my $helptext = "Simple Note collector for Bot::BasicBot::Pluggable.  Requires direct addressing.  Usage: 'note to self: Put this on the TODO list: Fix Bot docs'.";
@@ -83,6 +93,37 @@ sub told {
 #                                 . ($comment ? " and comment '$comment'" : "" )
 #    );
     return; # nice quiet bot
+}
+
+## Commands in format !foo or !{foo bar}
+## eg !nb some note text
+## !{show channel my notes}
+sub parse_command {
+    my ($self, $text) = @_;
+
+    ## All commands begin with a !
+    return if($text !~ /^!/);
+
+    my ($command) = $text =~ m/^!{([^}]+)/;
+    if(!$command) {
+        ($command) = $text =~ m/^!(\S+)/;
+    }
+    
+    if(!$command) {
+        warn "Command extraction failed! $text";
+        return;
+    }
+
+    $text =~ s/^!{?$command}?\s*//;
+    ## Does this match any known commands?
+    if(exists $commands{$command}) {
+        return { command => $commands{$command}, args => $text };
+    }
+
+    ## TODO: Add tag parsing
+    ## Do more intelligent parsing here?
+
+    return;
 }
 
 =item B<set_store>
