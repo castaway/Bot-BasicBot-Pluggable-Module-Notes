@@ -1,6 +1,7 @@
 package Bot::BasicBot::Pluggable::Module::Notes;
 
 use strict;
+use Data::Dumper;
 use vars qw( $VERSION );
 $VERSION = '0.01';
 
@@ -47,12 +48,12 @@ viewed on the web using a small web app (provided).
 
 ## Map commands to methods
 my %commands = (
-    'note to self' => 'nb',
-    'nb' => 'nb',
-    'my notes' => 'mn',
-    'mn' => 'mn',
-    'search' => 'search',
-    'show' => 'show',
+    'note to self' => { command => 'nb', method => 'store_note' },
+    'nb' => { command => 'nb', method => 'store_note' },
+    'my notes' => { command => 'mn', method => 'replay_notes' },
+    'mn' => { command => 'mn', method => 'replay_notes' },
+    'search' => { command => 'search', method => 'search'},
+    'show' => { command => 'show', method => 'show' },
 );
 
 sub help {
@@ -69,23 +70,17 @@ sub told {
     my $store = $self->{store}
       or return "Error: no store configured.";
 
-    my $body = $mess->{body};
-    my $who  = $mess->{who};
-    my $channel = $mess->{channel};
-
-    if(!($body =~ s/^note to self:\s*//)) {
-        ## Ignore anything that doesnt start with "note to self:"
+    my $command = $self->parse_command($mess->{body});
+    if(!$command) {
+        $self->{Bot}->say( who => $mess->{who},
+                           channel => $mess->{channel},
+                           body    => "No idea what you meant, try 'help notes'"
+            );
         return;
     }
 
-    my $now = localtime;
-    my $timestamp = $now->strftime("%Y-%m-%d %H:%M:%S");
-
-    my $res = $store->store( timestamp => $timestamp,
-                   name      => $who,
-                   channel   => $channel,
-                   notes     => $body,
-        );
+    my $method = $command->{method};
+    return $self->$method(%$mess, content => $command->{args});
 
 #    $self->{Bot}->say( who => $who,
 #                       channel => "msg",
@@ -93,6 +88,51 @@ sub told {
 #                                 . ($comment ? " and comment '$comment'" : "" )
 #    );
     return; # nice quiet bot
+}
+
+# !nb or !{note to self}
+sub store_note {
+    my ($self, %args) = @_;
+
+    my $now = localtime;
+    my $timestamp = $now->strftime("%Y-%m-%d %H:%M:%S");
+
+    my $res = $self->{store}->store( timestamp => $timestamp,
+                             name      => $args{who},
+                             channel   => $args{channel},
+                             notes     => $args{content},
+        );
+
+}
+
+#!mn or !{my notes}
+sub replay_notes {
+    my ($self, %args) = @_;
+
+    my $notes = $self->format_notes($self->{store}->get_notes(name => $args{who}));
+    $self->{Bot}->say( who => $args{who},
+                       channel => 'msg',
+                       body    => $_
+        ) for(@$notes);
+  
+}
+
+## IN: $notes = arrayref of hashrefs of db data, sorted by channel, time
+## OUT: arrayref of strings to send user
+sub format_notes {
+    my ($self, $notes) = @_;
+
+#    warn "Format notes: ", Dumper($notes);
+    my @formatted;
+    foreach my $note (@$notes) {
+        push @formatted, sprintf("[%s] (%s) %s\n", 
+                        $note->{channel}, 
+                        $note->{timestamp}, 
+                        $note->{notes}
+            );
+    }
+
+    return \@formatted;
 }
 
 ## Commands in format !foo or !{foo bar}
@@ -117,7 +157,7 @@ sub parse_command {
     $text =~ s/^!{?$command}?\s*//;
     ## Does this match any known commands?
     if(exists $commands{$command}) {
-        return { command => $commands{$command}, args => $text };
+        return { %{$commands{$command}}, args => $text };
     }
 
     ## TODO: Add tag parsing

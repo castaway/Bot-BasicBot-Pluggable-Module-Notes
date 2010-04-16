@@ -1,6 +1,7 @@
 package Bot::BasicBot::Pluggable::Module::Notes::Store::SQLite;
 
 use strict;
+use Data::Dumper;
 use vars qw( $VERSION );
 $VERSION = '0.02';
 
@@ -115,6 +116,25 @@ sub store {
       or croak "Error: can't insert into database: " . $dbh->errstr;
 
     return 1;
+}
+
+sub get_notes {
+    my ($self, %args) = @_;
+
+    my $dbh = $self->{dbh};
+
+    my $sql = qq{
+        SELECT timestamp, channel, notes FROM } . TABLENAME() . q{ WHERE name = ? ORDER BY channel, timestamp desc};
+#    warn "$sql:$args{name} " ;
+    my $sth = $dbh->prepare($sql
+    ) or croak "Error: can't prepare db query for select: " . $dbh->errstr;
+
+    $sth->execute( $args{name} );
+
+    my $notes = $sth->fetchall_arrayref({});
+
+#    warn "Notes: ", Dumper($notes);
+    return $notes;
 }
 
 =head1 BUGS
