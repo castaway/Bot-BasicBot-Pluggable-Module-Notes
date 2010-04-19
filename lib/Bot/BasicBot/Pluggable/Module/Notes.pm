@@ -58,7 +58,7 @@ my %commands = (
 
 sub help {
     my $self = shift;
-    my $helptext = "Simple Note collector for Bot::BasicBot::Pluggable.  Requires direct addressing.  Usage: 'note to self: Put this on the TODO list: Fix Bot docs'.";
+    my $helptext = "Simple Note collector for Bot::BasicBot::Pluggable.  Requires direct addressing.  Usage: !nb (or !{note to self}) <note text>. !mn (or !{my notes} - to view your notes.'.";
     my $notesurl = $self->{notesurl};
     $helptext .= "  The Notes can be viewed at $notesurl" if $notesurl;
     return $helptext;

@@ -27,6 +27,6 @@ $notes_module->set_store(
     ->new( "/home/castaway/public_html/notesbot/brane.db" )
     );
 
-$notes_module->set_notesurl( "http://desert-island.me.uk/~castaway/notesbot/brane.db" );
+$notes_module->set_notesurl( "http://desert-island.me.uk/cgi-bin/notesapp.cgi/" );
 
 $bot->run();

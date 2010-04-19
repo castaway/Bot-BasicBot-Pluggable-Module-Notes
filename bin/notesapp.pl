@@ -4,10 +4,18 @@ use Web::Simple 'Bot::BasicBot::Pluggable::Module::Notes::App';
 {
     package Bot::BasicBot::Pluggable::Module::Notes::App;
 
+    use lib '/usr/src/perl/Bot-BasicBot-Pluggable-Module-Notes/lib';
+    use Bot::BasicBot::Pluggable::Module::Notes::Store::SQLite;
     use File::Spec::Functions;
     use JSON ();
 
-    default_config ( file_dir => q{/usr/src/perl/Bot-BasicBot-Pluggable-Module-Notes/root/} );
+    my $store =  Bot::BasicBot::Pluggable::Module::Notes::Store::SQLite
+    ->new( "/home/castaway/public_html/notesbot/brane.db" );
+
+
+    default_config ( file_dir => q{/usr/src/perl/Bot-BasicBot-Pluggable-Module-Notes/root/},
+#                     dsn => '/home/castaway/public_html/notesbot/brane.db'
+                   );
 
     sub static_file {
         my ($self, $file, $type) = @_;
@@ -25,24 +33,22 @@ use Web::Simple 'Bot::BasicBot::Pluggable::Module::Notes::App';
         my ($self, %params) = @_;
 #        my @checkedparams{ qw(date time channel name notes) } = @{$params->{qw(date time channel name notes)}};
 
+        ## arrayref of hashrefs
+        # id, date, time, channel, name, notes
+        # extract date/time fields
+        my $db_notes = $store->get_notes(%params);
+
+        warn Data::Dumper::Dumper($db_notes);
+        my $rows = [ map { {
+            id => $_->{id},
+            cell => [ @{$_}{qw/id date time channel name notes/} ]
+        }
+                       } @$db_notes ];
         my $notes = {
                      total => 1,
                      page => 1,
-                     records => 2,
-                     rows => [
-                              { id => 1, cell => [1,
-                                                  '2010-04-17',
-                                                  '12:33',
-                                                  '#test',
-                                                  'castaway',
-                                                  'something' ] },
-                              { id => 2, cell => [2,
-                                                  '2010-04-17',
-                                                  '12:35',
-                                                  '#test',
-                                                  'castaway',
-                                                  'otherthing' ] },
-                             ],
+                     records => scalar @$db_notes,
+                     rows => $rows,
                     };
 
         return [ 200, [ 'Content-type' => 'application/json' ], [ JSON::encode_json($notes) ] ];
@@ -61,14 +67,21 @@ use Web::Simple 'Bot::BasicBot::Pluggable::Module::Notes::App';
             return $self->static_file("css/$file", "text/css");
         },
 #        sub (/json + ?:date~&:time~&:channel~&:name~&:notes~) {
-        sub (/json + ?date~&time~&channel~&name~&notes~) {
+          ## Add page and rows args.
+        sub (/json + ?id~&date~&time~&channel~&name~&notes~&page=&rows=&sidx=&sord=) {
 #            my ($self, $params) = @_;
-            my ($self, $date, $time, $channel, $name, $notes) = @_;
-            return $self->notes_json(date => $date, 
+            my ($self, $id, $date, $time, $channel, $name, $notes, $page, $rows, $order_ind, $sort_order) = @_;
+            return $self->notes_json(id => $id,
+                                     date => $date,
                                      time => $time,
                                      channel => $channel,
                                      name => $name,
-                                     notes => $notes);
+                                     notes => $notes,
+                                     page => $page,
+                                     rows => $rows, 
+                                     order_ind => $order_ind,
+                                     sort_order => $sort_order,
+                                    );
         }
 
     };

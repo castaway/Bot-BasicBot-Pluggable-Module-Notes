@@ -1,7 +1,7 @@
 #!/usr/bin/perl
 use strict;
 use warnings;
-use Test::More tests => 16;
+use Test::More tests => 10;
 use Test::DatabaseRow;
 
 use Test::Bot::BasicBot::Pluggable;
@@ -58,30 +58,6 @@ eval {
     );
 };
 is( $@, "", "...but is fine when it can" );
-
-my $store = Bot::BasicBot::Pluggable::Module::Notes::Store::SQLite
-            ->new( "t/brane.db" );
-isa_ok( $store, "Bot::BasicBot::Pluggable::Module::Notes::Store::SQLite");
-
-my $dbh = $store->dbh;
-$Test::DatabaseRow::dbh = $dbh;
-
-## test direct store
-ok($store->store(
-       timestamp => '2010-01-01T23:23:23',
-       name => 'directstore',
-       channel => '#stored',
-       notes => 'stored directly',
-   ), 'Stored bare entry in DB');
-
-row_ok( table => "notes",
-	where => [ channel => '#stored', notes => 'stored directly', name => 'directstore' ],
-	label => "Finds directly stored data'" );
-
-my $notes = $store->get_notes(name => 'directstore');
-is(@$notes, 1, 'Found the one stored note for this user');
-my $no_notes = $store->get_notes(name => 'nosuchuser');
-ok(!@$no_notes, 'No notes returned for non-existant user');
 
 ## test handler storage
 $notes_handler->store_note(who => 'me', channel => '#metest', content => 'something');

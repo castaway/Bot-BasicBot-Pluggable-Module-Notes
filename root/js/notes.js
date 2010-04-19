@@ -10,7 +10,7 @@ jQuery(document).ready(function(){
       {name:'time', index:'time', width:80, align:'left'}, 
       {name:'channel', index:'channel', width:80, align:'left'}, 
       {name:'name', index:'name', width:80, align:'left'}, 
-      {name:'notes', index:'notes', width:150, sortable:false} 
+      {name:'notes', index:'notes', width:500, sortable:false} 
     ],
     pager: '#pagers',
     rowNum:10,
@@ -20,10 +20,11 @@ jQuery(document).ready(function(){
     viewrecords: true,
     caption: 'Notes - data dump'
   }); 
-});
 
-$("#searchbutton").click(function(){
+jQuery("#searchbutton").click(function(){
 	jQuery("#notesgrid").jqGrid('searchGrid',
 		{sopt:['cn','bw','eq','ne','lt','gt','ew']}
 	);
 });
+});
+

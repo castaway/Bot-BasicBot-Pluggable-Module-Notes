@@ -2,6 +2,7 @@ package Bot::BasicBot::Pluggable::Module::Notes::Store::SQLite;
 
 use strict;
 use Data::Dumper;
+use DateTime::Format::Strptime;
 use vars qw( $VERSION );
 $VERSION = '0.02';
 
@@ -50,7 +51,8 @@ use constant TABLENAME => 'notes';
 sub new {
     my ($class, $filename) = @_;
 
-    my $dbh = DBI->connect("dbi:SQLite:dbname=$filename", "", "")
+    my $dbh = DBI->connect("dbi:SQLite:dbname=$filename", "", "",
+        {RaiseError => 1, AutoCommit => 1})
       or croak "ERROR: Can't connect to sqlite database: " . DBI->errstr;
 
     my $self = { };
@@ -121,17 +123,52 @@ sub store {
 sub get_notes {
     my ($self, %args) = @_;
 
+    warn Data::Dumper::Dumper(\%args);
     my $dbh = $self->{dbh};
 
+    my %allowed = map { ($_ => 1) } ( qw/datetime channel name notes/ );
+    my @select_vals = ();
+    my @select_keys = ();
+
+    foreach my $arg (keys %args) {
+        if ($arg && defined $args{$arg} && exists $allowed{$arg}) {
+            push @select_keys, "$arg LIKE ?"; 
+            push @select_vals, $args{$arg}; 
+        }
+    }
+    my $where_extra = " channel <> 'msg' " if(!$args{private});
+    my $where = join(' AND ', @select_keys, $where_extra);
+
+    my $page = $args{page} || 1;
+    my $limit = $args{rows} || 10;
+    
     my $sql = qq{
-        SELECT timestamp, channel, notes FROM } . TABLENAME() . q{ WHERE name = ? ORDER BY channel, timestamp desc};
-#    warn "$sql:$args{name} " ;
+        SELECT id, timestamp, channel, name, notes FROM } 
+        . TABLENAME() 
+        . ($where ? " WHERE $where" : '') 
+        . q{ ORDER BY } . ($args{order_ind} || 'channel') . " " . ($args{sort_order})
+# channel, timestamp desc}
+        . q{ LIMIT } . ($limit * $page - $limit) . ', ' . $limit;
+#    warn "$sql: " ;
     my $sth = $dbh->prepare($sql
     ) or croak "Error: can't prepare db query for select: " . $dbh->errstr;
 
-    $sth->execute( $args{name} );
+    $sth->execute( @select_vals );
 
     my $notes = $sth->fetchall_arrayref({});
+
+    warn "Notes: ", Dumper($notes);
+
+    ## hack to fake date/time fields:
+    my $dt_formatter = DateTime::Format::Strptime->new( pattern => '%F %T',
+                                                        locale => 'en_GB',
+                                                        time_zone => 'UTC'
+        );
+    foreach my $row (@$notes){
+        my $dt = $dt_formatter->parse_datetime( $row->{timestamp} );
+        $row->{date} = $dt->ymd;
+        $row->{time} = $dt->hms;
+    }
 
 #    warn "Notes: ", Dumper($notes);
     return $notes;
