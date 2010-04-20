@@ -1,7 +1,7 @@
 #!/usr/bin/perl
 use strict;
 use warnings;
-use Test::More tests => 10;
+use Test::More tests => 11;
 use Test::DatabaseRow;
 
 use Test::Bot::BasicBot::Pluggable;
@@ -59,6 +59,11 @@ eval {
 };
 is( $@, "", "...but is fine when it can" );
 
+my $store = Bot::BasicBot::Pluggable::Module::Notes::Store::SQLite
+            ->new( "t/brane.db" );
+my $dbh = $store->dbh;
+$Test::DatabaseRow::dbh = $dbh;
+
 ## test handler storage
 $notes_handler->store_note(who => 'me', channel => '#metest', content => 'something');
 
@@ -66,10 +71,19 @@ row_ok( table => "notes",
 	where => [ channel => '#metest', notes => 'something', name => 'me' ],
 	label => "Finds directly stored data'" );
  # fetch the direct stored one so we know the timestamp.. 
+
+$store->store(
+       timestamp => '2010-01-01 23:23:23',
+       name => 'directstore',
+       channel => '#stored',
+       notes => 'stored directly',
+    );
+
+
 $notes_handler->replay_notes(who => 'directstore', channel => '#metest');
 is_deeply($say_output, {
     who => 'directstore', channel => 'msg',
-    body => "[#stored] (2010-01-01T23:23:23) stored directly\n"
+    body => "[#stored] (2010-01-01 23:23:23) stored directly\n"
           }, 'Said stored note');
 
 

@@ -123,7 +123,7 @@ sub store {
 sub get_notes {
     my ($self, %args) = @_;
 
-    warn Data::Dumper::Dumper(\%args);
+#    warn Data::Dumper::Dumper(\%args);
     my $dbh = $self->{dbh};
 
     my %allowed = map { ($_ => 1) } ( qw/datetime channel name notes/ );
@@ -157,7 +157,7 @@ sub get_notes {
 
     my $notes = $sth->fetchall_arrayref({});
 
-    warn "Notes: ", Dumper($notes);
+#   warn "Notes: ", Dumper($notes);
 
     ## hack to fake date/time fields:
     my $dt_formatter = DateTime::Format::Strptime->new( pattern => '%F %T',
@@ -165,7 +165,8 @@ sub get_notes {
                                                         time_zone => 'UTC'
         );
     foreach my $row (@$notes){
-        my $dt = $dt_formatter->parse_datetime( $row->{timestamp} );
+        my $dt = $dt_formatter->parse_datetime( $row->{timestamp} )
+            or die "Badly formatted timestamp: $row->{timestamp}";
         $row->{date} = $dt->ymd;
         $row->{time} = $dt->hms;
     }

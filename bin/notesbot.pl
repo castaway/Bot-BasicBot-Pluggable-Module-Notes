@@ -7,9 +7,12 @@ use Bot::BasicBot::Pluggable;
 use Bot::BasicBot::Pluggable::Module::Notes;
 use Bot::BasicBot::Pluggable::Module::Notes::Store::SQLite;
 
+my $network = shift || 'irc.perl.org';
+my $channel = shift || '';
+
 my $bot = Bot::BasicBot::Pluggable->new(  
-    channels => ["#northwestengland.pm"],
-    server   => "irc.perl.org",
+    channels => [ $channel || "#northwestengland.pm"],
+    server   => $network, # "irc.perl.org",
     port     => "6667",
     
     nick     => "notesbot",
