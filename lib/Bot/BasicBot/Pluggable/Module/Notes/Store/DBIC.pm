@@ -6,6 +6,7 @@ use warnings;
 use Carp;
 use Bot::BasicBot::Pluggable::Module::Notes::Store::DBIC::Schema;
 use DBIx::Class::ResultClass::HashRefInflator;
+use Data::Dumper 'Dumper';
 
 my $dsn = 'dbi:SQLite';
 
@@ -50,10 +51,14 @@ sub dbh {
 
 sub store {
     my ($self, %args) = @_;
-
-    my $note = $self->{schema}->resultset('Note')->create( {
-                                                            %args
-                                                           });
+    
+    $args{tags} ||= [];
+    $args{tags} = [ map { +{tag => lc($_)} } @{$args{tags}} ];
+    
+    my $note = $self->{schema}->resultset('Note')->create( 
+        {
+            %args
+        });
     
     return $note;
 }
@@ -68,9 +73,14 @@ sub get_notes {
         }
     }
 
+    #warn "dbic get_notess: ".Dumper([\%args, \%opts]);
+
     my $rs = $self->{schema}->resultset('Note')->search(\%args, \%opts);
     $rs->result_class('DBIx::Class::ResultClass::HashRefInflator');
-    return [$rs->all];
+
+    my $ret = [$rs->all];
+    #warn Dumper($ret);
+    return $ret;
 }
 
 1;

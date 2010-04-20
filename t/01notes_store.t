@@ -22,7 +22,7 @@ foreach my $store_name (@stores) {
     my $dbh = $store->dbh;
     $Test::DatabaseRow::dbh = $dbh;
 
-## test direct store
+## test direct store, no tags.
     ok($store->store(
            timestamp => '2010-01-01 23:23:23',
            name => 'directstore',
@@ -33,6 +33,30 @@ foreach my $store_name (@stores) {
     row_ok( table => "notes",
             where => [ channel => '#stored', notes => 'stored directly', name => 'directstore' ],
             label => "Finds directly stored data'" );
+
+## test direct store, tags.
+    if ($store_name eq 'DBIC') {
+        ok($store->store(
+               timestamp => '2010-01-01 23:23:23',
+               name => 'directstore2',
+               channel => '#stored2',
+               notes => 'stored directly',
+               tags => [qw<test boobies>],
+           ), 'Stored bare entry in DB');
+        
+        row_ok( table => "notes",
+                where => [ channel => '#stored2', notes => 'stored directly', name => 'directstore2' ],
+                label => "Finds directly stored data'" );
+        
+        row_ok( table => 'tags',
+                where => [ tag => 'test' ],
+                label => "test tag in tags table, store = $store_name"
+            );
+        row_ok( table => 'tags',
+                where => [ tag => 'boobies' ],
+                label => 'boobies tag in tags table'
+            );
+    }
 
 ## get_notes, simple
     my $notes = $store->get_notes(name => 'directstore');

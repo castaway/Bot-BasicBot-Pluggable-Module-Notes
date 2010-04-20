@@ -146,10 +146,10 @@ sub get_notes {
         SELECT id, timestamp, channel, name, notes FROM } 
         . TABLENAME() 
         . ($where ? " WHERE $where" : '') 
-        . q{ ORDER BY } . ($args{order_ind} || 'channel') . " " . ($args{sort_order})
+        . q{ ORDER BY } . ($args{order_ind} || 'channel') . " " . ($args{sort_order} || 'DESC')
 # channel, timestamp desc}
         . q{ LIMIT } . ($limit * $page - $limit) . ', ' . $limit;
-#    warn "$sql: " ;
+    #warn "SQL: <<$sql>>" ;
     my $sth = $dbh->prepare($sql
     ) or croak "Error: can't prepare db query for select: " . $dbh->errstr;
 

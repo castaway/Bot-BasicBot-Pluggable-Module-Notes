@@ -90,6 +90,13 @@ sub told {
     return; # nice quiet bot
 }
 
+# Finds all tags within a free-form text string.
+sub parse_tags {
+    local ($_) = @_;
+
+    map {lc} m/#([a-z-]+)/gi;
+}
+
 # !nb or !{note to self}
 sub store_note {
     my ($self, %args) = @_;
@@ -101,6 +108,7 @@ sub store_note {
                              name      => $args{who},
                              channel   => $args{channel},
                              notes     => $args{content},
+                             tags      => [parse_tags $args{content}]
         );
 
 }

@@ -57,6 +57,6 @@ __PACKAGE__->add_columns(
   { data_type => "text" },
 );
 __PACKAGE__->set_primary_key("id");
-
+__PACKAGE__->has_many('tags', 'Bot::BasicBot::Pluggable::Module::Notes::Store::DBIC::Schema::Result::Tag', 'note_id');
 
 1;
