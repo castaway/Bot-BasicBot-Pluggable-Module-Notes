@@ -125,6 +125,23 @@ sub replay_notes {
   
 }
 
+#!search or !{search} <args>
+# by word or by tag, currently
+sub search {
+    my ($self, %args) = @_;
+
+    my $notes = $self->format_notes($self->{store}->get_notes(
+                                        tags => [ parse_tags($args{content}) ]
+                                    ));
+
+    $self->{Bot}->say( who => $args{who},
+                       channel => 'msg',
+                       body    => $_
+        ) for(@$notes);
+    
+
+}
+
 ## IN: $notes = arrayref of hashrefs of db data, sorted by channel, time
 ## OUT: arrayref of strings to send user
 sub format_notes {

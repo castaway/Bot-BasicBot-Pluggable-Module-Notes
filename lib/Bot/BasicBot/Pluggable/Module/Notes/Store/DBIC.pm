@@ -73,7 +73,12 @@ sub get_notes {
         }
     }
 
-    #warn "dbic get_notess: ".Dumper([\%args, \%opts]);
+    if(exists $args{tags}) {
+        $opts{join} = 'tags';
+        
+        $args{'tags.tag'} = [ @{ delete $args{tags} } ];
+    }
+#    warn "dbic get_notess: ".Dumper([\%args, \%opts]);
 
     my $rs = $self->{schema}->resultset('Note')->search(\%args, \%opts);
     $rs->result_class('DBIx::Class::ResultClass::HashRefInflator');

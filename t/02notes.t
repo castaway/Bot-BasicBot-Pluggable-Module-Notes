@@ -11,10 +11,10 @@ use_ok( "Bot::BasicBot::Pluggable::Module::Notes" );
 
 # What the what?  Putting this *inside* the for loop makes say_output be empty,
 # which implies that say() hasn't been overridden.
-my $say_output;
+my @say_output = ();
 sub Test::Bot::BasicBot::Pluggable::say {
     my ($self, %args) = @_;
-    $say_output = \%args;
+    push @say_output, \%args;
 }
 
 for my $store_name (qw<SQLite DBIC>) {
@@ -90,12 +90,12 @@ for my $store_name (qw<SQLite DBIC>) {
     # FIXME: replay_notes should say so when nothing is found.
     # FIXME: allow searching by channel.
 
-    $say_output = undef;
+    @say_output = ();
     $notes_handler->replay_notes(who => 'directstore');
-    is_deeply($say_output, {
+    is_deeply(\@say_output, [{
         who => 'directstore', channel => 'msg',
         body => "[#stored] (2010-01-01 23:23:23) stored directly\n"
-              }, "Said stored note, store=$store_name");
+              }], "Said stored note, store=$store_name");
 
     if ($store_name ne 'SQLite') {
 ## test handler storage, with tags
@@ -113,6 +113,13 @@ for my $store_name (qw<SQLite DBIC>) {
                 where => [tag => 'boobies'],
                 label => 'directly stored data, tag boobies'
             );
+
+        # test search with tags
+        @say_output = ();
+        $notes_handler->search(content => '#test');
+        is(scalar @say_output, 1, 'Returned one result in search for tag #test');
+        like($say_output[0]{body}, qr/\[#metest2\] \((?:[^)]+)\) something #test #BOOBIES/, 'Matched search ourput for tag #test');
+
     }
     
 ## test via bot
